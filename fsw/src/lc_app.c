@@ -327,7 +327,7 @@ int32 LC_SbInit(void)
 
 int32 LC_TableInit(void)
 {
-    int32 Result;
+    int32 Status = CFE_SUCCESS;
 
 /*
 ** LC task use of Critical Data Store (CDS)
@@ -377,16 +377,13 @@ int32 LC_TableInit(void)
     /*
     ** Create watchpoint and actionpoint result tables
     */
-    if ((Result = LC_CreateResultTables()) != CFE_SUCCESS)
-    {
-        return Result;
-    }
+    Status = LC_CreateResultTables();
 
     /*
     ** If CDS is enabled - create the 3 CDS areas managed by the LC task
     **  (continue with init, but disable CDS if unable to create all 3)
     */
-    if (LC_OperData.HaveActiveCDS)
+    if ((Status == CFE_SUCCESS) && (LC_OperData.HaveActiveCDS))
     {
         if (LC_CreateTaskCDS() != CFE_SUCCESS)
         {
@@ -397,15 +394,15 @@ int32 LC_TableInit(void)
     /*
     ** Create wp/ap definition tables - critical if CDS enabled
     */
-    if ((Result = LC_CreateDefinitionTables()) != CFE_SUCCESS)
+    if (Status == CFE_SUCCESS)
     {
-        return Result;
+        Status = LC_CreateDefinitionTables();
     }
 
     /*
     ** CDS still active only if we created 3 CDS areas and 2 critical tables
     */
-    if (LC_OperData.HaveActiveCDS)
+    if ((Status == CFE_SUCCESS) && (LC_OperData.HaveActiveCDS))
     {
         LC_OperData.TableResults |= LC_CDS_CREATED;
     }
@@ -414,77 +411,85 @@ int32 LC_TableInit(void)
     ** If any CDS area or critical table is not restored - initialize everything.
     **  (might be due to reset type, CDS disabled or corrupt, table restore error)
     */
-    if (((LC_OperData.TableResults & LC_WRT_CDS_RESTORED) == LC_WRT_CDS_RESTORED) &&
-        ((LC_OperData.TableResults & LC_ART_CDS_RESTORED) == LC_ART_CDS_RESTORED) &&
-        ((LC_OperData.TableResults & LC_APP_CDS_RESTORED) == LC_APP_CDS_RESTORED) &&
-        ((LC_OperData.TableResults & LC_WDT_TBL_RESTORED) == LC_WDT_TBL_RESTORED) &&
-        ((LC_OperData.TableResults & LC_ADT_TBL_RESTORED) == LC_ADT_TBL_RESTORED))
+    if (Status == CFE_SUCCESS)
     {
-        LC_OperData.TableResults |= LC_CDS_RESTORED;
-
-        /*
-        ** Get a pointer to the watchpoint definition table data...
-        */
-        Result = CFE_TBL_GetAddress((void *)&LC_OperData.WDTPtr, LC_OperData.WDTHandle);
-
-        if ((Result != CFE_SUCCESS) && (Result != CFE_TBL_INFO_UPDATED))
+        if (((LC_OperData.TableResults & LC_WRT_CDS_RESTORED) == LC_WRT_CDS_RESTORED) &&
+            ((LC_OperData.TableResults & LC_ART_CDS_RESTORED) == LC_ART_CDS_RESTORED) &&
+            ((LC_OperData.TableResults & LC_APP_CDS_RESTORED) == LC_APP_CDS_RESTORED) &&
+            ((LC_OperData.TableResults & LC_WDT_TBL_RESTORED) == LC_WDT_TBL_RESTORED) &&
+            ((LC_OperData.TableResults & LC_ADT_TBL_RESTORED) == LC_ADT_TBL_RESTORED))
         {
-            CFE_EVS_SendEvent(LC_WDT_GETADDR_ERR_EID, CFE_EVS_EventType_ERROR, "Error getting WDT address, RC=0x%08X",
-                              (unsigned int)Result);
-            return Result;
+            LC_OperData.TableResults |= LC_CDS_RESTORED;
+
+            /*
+            ** Get a pointer to the watchpoint definition table data...
+            */
+            Status = CFE_TBL_GetAddress((void *)&LC_OperData.WDTPtr, LC_OperData.WDTHandle);
+
+            if ((Status != CFE_SUCCESS) && (Status != CFE_TBL_INFO_UPDATED))
+            {
+                CFE_EVS_SendEvent(LC_WDT_GETADDR_ERR_EID, CFE_EVS_EventType_ERROR,
+                                  "Error getting WDT address, RC=0x%08X", (unsigned int)Status);
+            }
+
+            /*
+            ** Get a pointer to the actionpoint definition table data
+            */
+            if ((Status == CFE_SUCCESS) || (Status == CFE_TBL_INFO_UPDATED))
+            {
+                Status = CFE_TBL_GetAddress((void *)&LC_OperData.ADTPtr, LC_OperData.ADTHandle);
+
+                if ((Status != CFE_SUCCESS) && (Status != CFE_TBL_INFO_UPDATED))
+                {
+                    CFE_EVS_SendEvent(LC_ADT_GETADDR_ERR_EID, CFE_EVS_EventType_ERROR,
+                                      "Error getting ADT address, RC=0x%08X", (unsigned int)Status);
+                }
+            }
+        }
+        else
+        {
+            Status = LC_LoadDefaultTables();
         }
 
-        /*
-        ** Get a pointer to the actionpoint definition table data
-        */
-        Result = CFE_TBL_GetAddress((void *)&LC_OperData.ADTPtr, LC_OperData.ADTHandle);
-
-        if ((Result != CFE_SUCCESS) && (Result != CFE_TBL_INFO_UPDATED))
+        if (Status == CFE_TBL_INFO_UPDATED)
         {
-            CFE_EVS_SendEvent(LC_ADT_GETADDR_ERR_EID, CFE_EVS_EventType_ERROR, "Error getting ADT address, RC=0x%08X",
-                              (unsigned int)Result);
-            return Result;
-        }
-    }
-    else
-    {
-        Result = LC_LoadDefaultTables();
-        if ((Result != CFE_SUCCESS) && (Result != CFE_TBL_INFO_UPDATED))
-        {
-            return Result;
+            Status = CFE_SUCCESS;
         }
     }
 
     /*
     ** Create watchpoint hash tables -- also subscribes to watchpoint packets
     */
-    LC_CreateHashTable();
-
-    /*
-    ** Display results of CDS initialization (if enabled at startup)
-    */
-    if ((LC_OperData.TableResults & LC_CDS_ENABLED) == LC_CDS_ENABLED)
+    if (Status == CFE_SUCCESS)
     {
-        if ((LC_OperData.TableResults & LC_CDS_RESTORED) == LC_CDS_RESTORED)
+        LC_CreateHashTable();
+
+        /*
+        ** Display results of CDS initialization (if enabled at startup)
+        */
+        if ((LC_OperData.TableResults & LC_CDS_ENABLED) == LC_CDS_ENABLED)
         {
-            CFE_EVS_SendEvent(LC_CDS_RESTORED_INF_EID, CFE_EVS_EventType_INFORMATION,
-                              "Previous state restored from Critical Data Store");
+            if ((LC_OperData.TableResults & LC_CDS_RESTORED) == LC_CDS_RESTORED)
+            {
+                CFE_EVS_SendEvent(LC_CDS_RESTORED_INF_EID, CFE_EVS_EventType_INFORMATION,
+                                  "Previous state restored from Critical Data Store");
+            }
+            else if ((LC_OperData.TableResults & LC_CDS_UPDATED) == LC_CDS_UPDATED)
+            {
+                CFE_EVS_SendEvent(LC_CDS_UPDATED_INF_EID, CFE_EVS_EventType_INFORMATION,
+                                  "Default state loaded and written to CDS, activity mask = 0x%08X",
+                                  (unsigned int)LC_OperData.TableResults);
+            }
         }
-        else if ((LC_OperData.TableResults & LC_CDS_UPDATED) == LC_CDS_UPDATED)
+        else
         {
-            CFE_EVS_SendEvent(LC_CDS_UPDATED_INF_EID, CFE_EVS_EventType_INFORMATION,
-                              "Default state loaded and written to CDS, activity mask = 0x%08X",
+            CFE_EVS_SendEvent(LC_CDS_DISABLED_INF_EID, CFE_EVS_EventType_INFORMATION,
+                              "LC use of Critical Data Store disabled, activity mask = 0x%08X",
                               (unsigned int)LC_OperData.TableResults);
         }
     }
-    else
-    {
-        CFE_EVS_SendEvent(LC_CDS_DISABLED_INF_EID, CFE_EVS_EventType_INFORMATION,
-                          "LC use of Critical Data Store disabled, activity mask = 0x%08X",
-                          (unsigned int)LC_OperData.TableResults);
-    }
 
-    return CFE_SUCCESS;
+    return Status;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
