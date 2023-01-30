@@ -732,32 +732,32 @@ int32 LC_CreateDefinitionTables(void)
 
 int32 LC_CreateTaskCDS(void)
 {
-    int32  Status;
+    int32  Result;
     uint32 DataSize;
 
     /*
     ** Create CDS and try to restore Watchpoint Results Table (WRT) data
     */
     DataSize = LC_MAX_WATCHPOINTS * sizeof(LC_WRTEntry_t);
-    Status   = CFE_ES_RegisterCDS(&LC_OperData.WRTDataCDSHandle, DataSize, LC_WRT_CDSNAME);
+    Result   = CFE_ES_RegisterCDS(&LC_OperData.WRTDataCDSHandle, DataSize, LC_WRT_CDSNAME);
 
-    if (Status == CFE_SUCCESS)
+    if (Result == CFE_SUCCESS)
     {
         /*
         ** Normal result after a power on reset (cold boot) - continue with next CDS area
         */
         LC_OperData.TableResults |= LC_WRT_CDS_CREATED;
     }
-    else if (Status == CFE_ES_CDS_ALREADY_EXISTS)
+    else if (Result == CFE_ES_CDS_ALREADY_EXISTS)
     {
         /*
         ** Normal result after a processor reset (warm boot) - try to restore previous data
         */
         LC_OperData.TableResults |= LC_WRT_CDS_CREATED;
 
-        Status = CFE_ES_RestoreFromCDS(LC_OperData.WRTPtr, LC_OperData.WRTDataCDSHandle);
+        Result = CFE_ES_RestoreFromCDS(LC_OperData.WRTPtr, LC_OperData.WRTDataCDSHandle);
 
-        if (Status == CFE_SUCCESS)
+        if (Result == CFE_SUCCESS)
         {
             LC_OperData.TableResults |= LC_WRT_CDS_RESTORED;
         }
@@ -765,35 +765,35 @@ int32 LC_CreateTaskCDS(void)
     else
     {
         CFE_EVS_SendEvent(LC_WRT_CDS_REGISTER_ERR_EID, CFE_EVS_EventType_ERROR,
-                          "Error registering WRT CDS Area, RC=0x%08X", (unsigned int)Status);
+                          "Error registering WRT CDS Area, RC=0x%08X", (unsigned int)Result);
     }
 
-    if (Status == CFE_SUCCESS)
+    if (Result == CFE_SUCCESS)
     {
         /*
         ** Create CDS and try to restore Actionpoint Results Table (ART) data
         */
         DataSize = LC_MAX_ACTIONPOINTS * sizeof(LC_ARTEntry_t);
-        Status   = CFE_ES_RegisterCDS(&LC_OperData.ARTDataCDSHandle, DataSize, LC_ART_CDSNAME);
+        Result   = CFE_ES_RegisterCDS(&LC_OperData.ARTDataCDSHandle, DataSize, LC_ART_CDSNAME);
     }
 
-    if (Status == CFE_SUCCESS)
+    if (Result == CFE_SUCCESS)
     {
         /*
         ** Normal result after a power on reset (cold boot) - continue with next CDS area
         */
         LC_OperData.TableResults |= LC_ART_CDS_CREATED;
     }
-    else if (Status == CFE_ES_CDS_ALREADY_EXISTS)
+    else if (Result == CFE_ES_CDS_ALREADY_EXISTS)
     {
         /*
         ** Normal result after a processor reset (warm boot) - try to restore previous data
         */
         LC_OperData.TableResults |= LC_ART_CDS_CREATED;
 
-        Status = CFE_ES_RestoreFromCDS(LC_OperData.ARTPtr, LC_OperData.ARTDataCDSHandle);
+        Result = CFE_ES_RestoreFromCDS(LC_OperData.ARTPtr, LC_OperData.ARTDataCDSHandle);
 
-        if (Status == CFE_SUCCESS)
+        if (Result == CFE_SUCCESS)
         {
             LC_OperData.TableResults |= LC_ART_CDS_RESTORED;
         }
@@ -801,35 +801,35 @@ int32 LC_CreateTaskCDS(void)
     else
     {
         CFE_EVS_SendEvent(LC_ART_CDS_REGISTER_ERR_EID, CFE_EVS_EventType_ERROR,
-                          "Error registering ART CDS Area, RC=0x%08X", (unsigned int)Status);
+                          "Error registering ART CDS Area, RC=0x%08X", (unsigned int)Result);
     }
 
-    if (Status == CFE_SUCCESS)
+    if (Result == CFE_SUCCESS)
     {
         /*
         ** Create CDS and try to restore Application (APP) data
         */
         DataSize = sizeof(LC_AppData_t);
-        Status   = CFE_ES_RegisterCDS(&LC_OperData.AppDataCDSHandle, DataSize, LC_APPDATA_CDSNAME);
+        Result   = CFE_ES_RegisterCDS(&LC_OperData.AppDataCDSHandle, DataSize, LC_APPDATA_CDSNAME);
     }
 
-    if (Status == CFE_SUCCESS)
+    if (Result == CFE_SUCCESS)
     {
         /*
         ** Normal result after a power on reset (cold boot) - continue with next CDS area
         */
         LC_OperData.TableResults |= LC_APP_CDS_CREATED;
     }
-    else if (Status == CFE_ES_CDS_ALREADY_EXISTS)
+    else if (Result == CFE_ES_CDS_ALREADY_EXISTS)
     {
         /*
         ** Normal result after a processor reset (warm boot) - try to restore previous data
         */
         LC_OperData.TableResults |= LC_APP_CDS_CREATED;
 
-        Status = CFE_ES_RestoreFromCDS(&LC_AppData, LC_OperData.AppDataCDSHandle);
+        Result = CFE_ES_RestoreFromCDS(&LC_AppData, LC_OperData.AppDataCDSHandle);
 
-        if ((Status == CFE_SUCCESS) && (LC_AppData.CDSSavedOnExit == LC_CDS_SAVED))
+        if ((Result == CFE_SUCCESS) && (LC_AppData.CDSSavedOnExit == LC_CDS_SAVED))
         {
             /*
             ** Success - only if previous session saved CDS data at least once
@@ -848,10 +848,10 @@ int32 LC_CreateTaskCDS(void)
     else
     {
         CFE_EVS_SendEvent(LC_APP_CDS_REGISTER_ERR_EID, CFE_EVS_EventType_ERROR,
-                          "Error registering application data CDS Area, RC=0x%08X", (unsigned int)Status);
+                          "Error registering application data CDS Area, RC=0x%08X", (unsigned int)Result);
     }
 
-    return Status;
+    return Result;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
