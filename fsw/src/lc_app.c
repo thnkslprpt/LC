@@ -327,7 +327,7 @@ int32 LC_SbInit(void)
 
 int32 LC_TableInit(void)
 {
-    int32 Status;
+    int32 Result;
 
 /*
 ** LC task use of Critical Data Store (CDS)
@@ -377,18 +377,18 @@ int32 LC_TableInit(void)
     /*
     ** Create watchpoint and actionpoint result tables
     */
-    Status = LC_CreateResultTables();
+    Result = LC_CreateResultTables();
 
     /*
     ** If CDS is enabled - create the 3 CDS areas managed by the LC task
     **  (continue with init, but disable CDS if unable to create all 3)
     */
-    if (Status == CFE_SUCCESS)
+    if (Result == CFE_SUCCESS)
     {
         if (LC_OperData.HaveActiveCDS)
         {
-            Status = LC_CreateTaskCDS();
-            if (Status != CFE_SUCCESS)
+            Result = LC_CreateTaskCDS();
+            if (Result != CFE_SUCCESS)
             {
                 LC_OperData.HaveActiveCDS = false;
             }
@@ -396,13 +396,13 @@ int32 LC_TableInit(void)
         /*
          ** Create wp/ap definition tables - critical if CDS enabled
          */
-        Status = LC_CreateDefinitionTables();
+        Result = LC_CreateDefinitionTables();
     }
 
     /*
     ** CDS still active only if we created 3 CDS areas and 2 critical tables
     */
-    if ((Status == CFE_SUCCESS) && (LC_OperData.HaveActiveCDS))
+    if ((Result == CFE_SUCCESS) && (LC_OperData.HaveActiveCDS))
     {
         LC_OperData.TableResults |= LC_CDS_CREATED;
     }
@@ -411,7 +411,7 @@ int32 LC_TableInit(void)
     ** If any CDS area or critical table is not restored - initialize everything.
     **  (might be due to reset type, CDS disabled or corrupt, table restore error)
     */
-    if (Status == CFE_SUCCESS)
+    if (Result == CFE_SUCCESS)
     {
         if (((LC_OperData.TableResults & LC_WRT_CDS_RESTORED) == LC_WRT_CDS_RESTORED) &&
             ((LC_OperData.TableResults & LC_ART_CDS_RESTORED) == LC_ART_CDS_RESTORED) &&
@@ -424,43 +424,43 @@ int32 LC_TableInit(void)
             /*
             ** Get a pointer to the watchpoint definition table data...
             */
-            Status = CFE_TBL_GetAddress((void *)&LC_OperData.WDTPtr, LC_OperData.WDTHandle);
+            Result = CFE_TBL_GetAddress((void *)&LC_OperData.WDTPtr, LC_OperData.WDTHandle);
 
-            if ((Status != CFE_SUCCESS) && (Status != CFE_TBL_INFO_UPDATED))
+            if ((Result != CFE_SUCCESS) && (Result != CFE_TBL_INFO_UPDATED))
             {
                 CFE_EVS_SendEvent(LC_WDT_GETADDR_ERR_EID, CFE_EVS_EventType_ERROR,
-                                  "Error getting WDT address, RC=0x%08X", (unsigned int)Status);
+                                  "Error getting WDT address, RC=0x%08X", (unsigned int)Result);
             }
 
             /*
             ** Get a pointer to the actionpoint definition table data
             */
-            if ((Status == CFE_SUCCESS) || (Status == CFE_TBL_INFO_UPDATED))
+            if ((Result == CFE_SUCCESS) || (Result == CFE_TBL_INFO_UPDATED))
             {
-                Status = CFE_TBL_GetAddress((void *)&LC_OperData.ADTPtr, LC_OperData.ADTHandle);
+                Result = CFE_TBL_GetAddress((void *)&LC_OperData.ADTPtr, LC_OperData.ADTHandle);
 
-                if ((Status != CFE_SUCCESS) && (Status != CFE_TBL_INFO_UPDATED))
+                if ((Result != CFE_SUCCESS) && (Result != CFE_TBL_INFO_UPDATED))
                 {
                     CFE_EVS_SendEvent(LC_ADT_GETADDR_ERR_EID, CFE_EVS_EventType_ERROR,
-                                      "Error getting ADT address, RC=0x%08X", (unsigned int)Status);
+                                      "Error getting ADT address, RC=0x%08X", (unsigned int)Result);
                 }
             }
         }
         else
         {
-            Status = LC_LoadDefaultTables();
+            Result = LC_LoadDefaultTables();
         }
 
-        if (Status == CFE_TBL_INFO_UPDATED)
+        if (Result == CFE_TBL_INFO_UPDATED)
         {
-            Status = CFE_SUCCESS;
+            Result = CFE_SUCCESS;
         }
     }
 
     /*
     ** Create watchpoint hash tables -- also subscribes to watchpoint packets
     */
-    if (Status == CFE_SUCCESS)
+    if (Result == CFE_SUCCESS)
     {
         LC_CreateHashTable();
 
@@ -489,7 +489,7 @@ int32 LC_TableInit(void)
         }
     }
 
-    return Status;
+    return Result;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
