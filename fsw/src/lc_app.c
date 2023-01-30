@@ -768,11 +768,14 @@ int32 LC_CreateTaskCDS(void)
                           "Error registering WRT CDS Area, RC=0x%08X", (unsigned int)Result);
     }
 
-    /*
-    ** Create CDS and try to restore Actionpoint Results Table (ART) data
-    */
-    DataSize = LC_MAX_ACTIONPOINTS * sizeof(LC_ARTEntry_t);
-    Result   = CFE_ES_RegisterCDS(&LC_OperData.ARTDataCDSHandle, DataSize, LC_ART_CDSNAME);
+    if (Result == CFE_SUCCESS)
+    {
+        /*
+        ** Create CDS and try to restore Actionpoint Results Table (ART) data
+        */
+        DataSize = LC_MAX_ACTIONPOINTS * sizeof(LC_ARTEntry_t);
+        Result   = CFE_ES_RegisterCDS(&LC_OperData.ARTDataCDSHandle, DataSize, LC_ART_CDSNAME);
+    }
 
     if (Result == CFE_SUCCESS)
     {
@@ -801,11 +804,14 @@ int32 LC_CreateTaskCDS(void)
                           "Error registering ART CDS Area, RC=0x%08X", (unsigned int)Result);
     }
 
-    /*
-    ** Create CDS and try to restore Application (APP) data
-    */
-    DataSize = sizeof(LC_AppData_t);
-    Result   = CFE_ES_RegisterCDS(&LC_OperData.AppDataCDSHandle, DataSize, LC_APPDATA_CDSNAME);
+    if (Result == CFE_SUCCESS)
+    {
+        /*
+        ** Create CDS and try to restore Application (APP) data
+        */
+        DataSize = sizeof(LC_AppData_t);
+        Result   = CFE_ES_RegisterCDS(&LC_OperData.AppDataCDSHandle, DataSize, LC_APPDATA_CDSNAME);
+    }
 
     if (Result == CFE_SUCCESS)
     {
