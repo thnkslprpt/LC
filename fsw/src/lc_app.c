@@ -849,6 +849,7 @@ int32 LC_CreateTaskCDS(void)
     {
         CFE_EVS_SendEvent(LC_APP_CDS_REGISTER_ERR_EID, CFE_EVS_EventType_ERROR,
                           "Error registering application data CDS Area, RC=0x%08X", (unsigned int)Result);
+        return Result;
     }
 
     return Result;
