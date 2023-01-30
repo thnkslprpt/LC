@@ -383,19 +383,19 @@ int32 LC_TableInit(void)
     ** If CDS is enabled - create the 3 CDS areas managed by the LC task
     **  (continue with init, but disable CDS if unable to create all 3)
     */
-    if ((Status == CFE_SUCCESS) && (LC_OperData.HaveActiveCDS))
-    {
-        if (LC_CreateTaskCDS() != CFE_SUCCESS)
-        {
-            LC_OperData.HaveActiveCDS = false;
-        }
-    }
-
-    /*
-    ** Create wp/ap definition tables - critical if CDS enabled
-    */
     if (Status == CFE_SUCCESS)
     {
+        if (LC_OperData.HaveActiveCDS)
+        {
+            Status = LC_CreateTaskCDS();
+            if (Status != CFE_SUCCESS)
+            {
+                LC_OperData.HaveActiveCDS = false;
+            }
+        }
+        /*
+         ** Create wp/ap definition tables - critical if CDS enabled
+         */
         Status = LC_CreateDefinitionTables();
     }
 
