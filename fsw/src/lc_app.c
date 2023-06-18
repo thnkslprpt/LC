@@ -762,6 +762,8 @@ CFE_Status_t LC_CreateTaskCDS(void)
         {
             LC_OperData.TableResults |= LC_WRT_CDS_RESTORED;
         }
+
+        Result = CFE_SUCCESS; /* Continue to next part of restore process */
     }
     else
     {
@@ -769,7 +771,7 @@ CFE_Status_t LC_CreateTaskCDS(void)
                           "Error registering WRT CDS Area, RC=0x%08X", (unsigned int)Result);
     }
 
-    if (Result == CFE_SUCCESS || Result == CFE_ES_CDS_ALREADY_EXISTS)
+    if (Result == CFE_SUCCESS)
     {
         /*
         ** Create CDS and try to restore Actionpoint Results Table (ART) data
@@ -797,6 +799,8 @@ CFE_Status_t LC_CreateTaskCDS(void)
             {
                 LC_OperData.TableResults |= LC_ART_CDS_RESTORED;
             }
+
+            Result = CFE_SUCCESS; /* Continue to next part of restore process */
         }
         else
         {
@@ -805,7 +809,7 @@ CFE_Status_t LC_CreateTaskCDS(void)
         }
     }
 
-    if (Result == CFE_SUCCESS || Result == CFE_ES_CDS_ALREADY_EXISTS)
+    if (Result == CFE_SUCCESS)
     {
         /*
         ** Create CDS and try to restore Application (APP) data
@@ -844,6 +848,8 @@ CFE_Status_t LC_CreateTaskCDS(void)
                 LC_AppData.CurrentLCState = LC_STATE_WHEN_CDS_RESTORED;
 #endif
             }
+
+            Result = CFE_SUCCESS; /* Return CFE_SUCCESS */
         }
         else
         {
